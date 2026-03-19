@@ -1,0 +1,5 @@
+{
+  "name": "UniShare",
+  "description": "A community-based platform where students can browse and share academic PDF resources organized by university, branch, year, semester, and subject.",
+  "requestFramePermissions": []
+}
