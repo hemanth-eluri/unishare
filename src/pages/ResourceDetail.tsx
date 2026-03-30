@@ -1,14 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ExternalLink, Flag, ArrowLeft, FileText } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ExternalLink, Flag, ArrowLeft, FileText, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function ResourceDetail() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  
   const [resource, setResource] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [reportReason, setReportReason] = useState('');
   const [reporting, setReporting] = useState(false);
   const [reported, setReported] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch(`/api/resources/${id}`)
@@ -40,15 +45,49 @@ export default function ResourceDetail() {
     }
   };
 
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to delete this resource?")) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/resources/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${user?._id}`,
+        }
+      });
+      if (res.ok) {
+        navigate('/browse');
+      } else {
+        alert("Failed to delete resource");
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) return <div className="text-center py-20 text-black/40">Loading...</div>;
   if (!resource || resource.error) return <div className="text-center py-20 text-red-500">Resource not found.</div>;
 
   return (
     <div className="max-w-3xl mx-auto">
-      <Link to="/browse" className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black mb-8 transition-colors">
-        <ArrowLeft className="w-4 h-4" />
-        Back to Browse
-      </Link>
+      <div className="flex items-center justify-between mb-8">
+        <Link to="/browse" className="inline-flex items-center gap-2 text-sm text-black/60 hover:text-black transition-colors">
+          <ArrowLeft className="w-4 h-4" />
+          Back to Browse
+        </Link>
+        {user?.role === 'admin' && (
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-2 text-sm text-red-600 hover:text-red-700 bg-red-50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? 'Deleting...' : 'Delete Resource'}
+          </button>
+        )}
+      </div>
 
       <div className="bg-white p-8 rounded-2xl border border-black/5 shadow-sm mb-8">
         <div className="flex items-start gap-6">

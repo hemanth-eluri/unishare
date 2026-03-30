@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import path from 'path';
 import multer from 'multer';
 import fs from 'fs';
+import bcryptjs from 'bcryptjs';
 
 dotenv.config();
 
@@ -40,9 +41,19 @@ let isMongoConnected = false;
 
 if (MONGODB_URI) {
   mongoose.connect(MONGODB_URI)
-    .then(() => {
+    .then(async () => {
       isMongoConnected = true;
       console.log('Connected to MongoDB');
+      try {
+        const adminExists = await User.findOne({ email: 'admin@kluniversity.in' });
+        if (!adminExists) {
+          const hashedPassword = await bcryptjs.hash('KL2508281', 10);
+          await User.create({ email: 'admin@kluniversity.in', password: hashedPassword, role: 'admin' });
+          console.log('Default admin created in Mongo');
+        }
+      } catch (err) {
+        console.error('Failed to create default admin', err);
+      }
     })
     .catch(err => console.error('MongoDB connection error:', err));
 } else {
@@ -68,8 +79,16 @@ const reportSchema = new mongoose.Schema({
   created_at: { type: Date, default: Date.now }
 });
 
+const userSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['user', 'admin'], default: 'user' },
+  created_at: { type: Date, default: Date.now }
+});
+
 const Resource = mongoose.model('Resource', resourceSchema);
 const Report = mongoose.model('Report', reportSchema);
+const User = mongoose.model('User', userSchema);
 
 // In-memory fallback data for preview environment
 let fallbackResources: any[] = [
@@ -77,17 +96,29 @@ let fallbackResources: any[] = [
     _id: '1',
     title: 'Data Structures and Algorithms Notes',
     description: 'Comprehensive notes covering trees, graphs, and dynamic programming.',
-    university: 'Stanford University',
-    branch: 'Computer Science',
-    year: 'Year 2',
-    semester: 'Semester 3',
-    subject: 'CS161',
+    university: 'JNTU',
+    branch: 'CSE',
+    year: '2nd Year',
+    semester: 'Sem 2',
+    subject: 'Design and Analysis of Algorithms',
     pdf_link: 'https://drive.google.com/file/d/1234567890/view',
     uploader_name: 'Alice',
     created_at: new Date()
   }
 ];
 let fallbackReports: any[] = [];
+let fallbackUsers: any[] = [];
+
+// Create default admin for fallback memory mode
+bcryptjs.hash('KL2508281', 10).then(hashed => {
+  fallbackUsers.push({
+    _id: 'admin_1',
+    email: 'admin@kluniversity.in',
+    password: hashed,
+    role: 'admin',
+    created_at: new Date()
+  });
+});
 
 app.post('/api/upload-resource', upload.single('document_file'), async (req, res) => {
   try {
@@ -222,6 +253,99 @@ app.post('/api/report-resource', async (req, res) => {
       const report = { ...data, _id: Date.now().toString(), created_at: new Date() };
       fallbackReports.push(report);
       res.json(report);
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/register', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    if (!email || !password) return res.status(400).json({ error: 'Missing email or password' });
+    if (!email.endsWith('kluniversity.in')) return res.status(400).json({ error: 'Please use a kluniversity.in email.' });
+    
+    const hashedPassword = await bcryptjs.hash(password, 10);
+    if (isMongoConnected) {
+      const exists = await User.findOne({ email });
+      if (exists) return res.status(400).json({ error: 'Email already registered' });
+      const user = new User({ email, password: hashedPassword, role: 'user' });
+      await user.save();
+      res.json({ _id: user._id, email: user.email, role: user.role });
+    } else {
+      if (fallbackUsers.find(u => u.email === email)) return res.status(400).json({ error: 'Email already registered' });
+      const user = { _id: Date.now().toString(), email, password: hashedPassword, role: 'user', created_at: new Date() };
+      fallbackUsers.push(user);
+      res.json({ _id: user._id, email: user.email, role: user.role });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/login', async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    let user;
+    if (isMongoConnected) {
+      user = await User.findOne({ email });
+    } else {
+      user = fallbackUsers.find(u => u.email === email);
+    }
+    
+    if (!user) return res.status(401).json({ error: 'Invalid email or password' });
+    const match = await bcryptjs.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Invalid email or password' });
+    
+    res.json({ _id: user._id, email: user.email, role: user.role });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+const checkAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  try {
+    const userId = req.headers.authorization?.split(' ')[1];
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized: Missing token' });
+      return;
+    }
+    
+    let user;
+    if (isMongoConnected) user = await User.findById(userId);
+    else user = fallbackUsers.find(u => u._id === userId);
+    
+    if (!user || user.role !== 'admin') {
+      res.status(403).json({ error: 'Forbidden: Admin access required' });
+      return;
+    }
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Server error authorizing admin' });
+  }
+};
+
+app.delete('/api/resources/:id', checkAdmin, async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      await Resource.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } else {
+      fallbackResources = fallbackResources.filter(r => r._id !== req.params.id);
+      res.json({ success: true });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/reports', checkAdmin, async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      const reports = await Report.find().sort({ created_at: -1 });
+      res.json(reports);
+    } else {
+      res.json(fallbackReports.concat().sort((a, b) => b.created_at.getTime() - a.created_at.getTime()));
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });

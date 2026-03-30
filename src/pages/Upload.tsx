@@ -1,10 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { academicData } from '../config/academicData';
+import { useAuth } from '../context/AuthContext';
 
 export default function Upload() {
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  // Dropdown states for dependent logic
+  const [university, setUniversity] = useState('');
+  const [branch, setBranch] = useState('');
+  const [year, setYear] = useState('');
+  const [semester, setSemester] = useState('');
+  const [subject, setSubject] = useState('');
+
+  const branches = academicData.getBranches(university);
+  const years = academicData.getYears(university, branch);
+  const semesters = academicData.getSemesters(university, branch, year);
+  const subjects = academicData.getSubjects(university, branch, year, semester);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -40,6 +61,8 @@ export default function Upload() {
     }
   };
 
+  if (!user) return null;
+
   return (
     <div className="max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-2">Upload Resource</h1>
@@ -55,23 +78,97 @@ export default function Upload() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <label className="text-sm font-medium">University *</label>
-            <input required name="university" type="text" placeholder="e.g. Stanford University" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <select
+              required
+              name="university"
+              value={university}
+              onChange={(e) => {
+                setUniversity(e.target.value);
+                setBranch('');
+                setYear('');
+                setSemester('');
+                setSubject('');
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white"
+            >
+              <option value="">Select University</option>
+              {academicData.universities.map((u) => (
+                <option key={u} value={u}>{u}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Branch *</label>
-            <input required name="branch" type="text" placeholder="e.g. Computer Science" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <select
+              required
+              name="branch"
+              value={branch}
+              onChange={(e) => {
+                setBranch(e.target.value);
+                setSubject('');
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white"
+            >
+              <option value="">{(!university) ? "Select University First" : "Select Branch"}</option>
+              {branches.map((b) => (
+                <option key={b} value={b}>{b}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Year *</label>
-            <input required name="year" type="text" placeholder="e.g. Year 2" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <select
+              required
+              name="year"
+              disabled={!branch}
+              value={year}
+              onChange={(e) => {
+                setYear(e.target.value);
+                setSemester('');
+                setSubject('');
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white disabled:opacity-50 disabled:bg-black/5"
+            >
+              <option value="">{(!branch) ? "Select Branch First" : "Select Year"}</option>
+              {years.map((y) => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Semester *</label>
-            <input required name="semester" type="text" placeholder="e.g. Semester 3" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <select
+              required
+              name="semester"
+              disabled={!year}
+              value={semester}
+              onChange={(e) => {
+                setSemester(e.target.value);
+                setSubject('');
+              }}
+              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white disabled:opacity-50 disabled:bg-black/5"
+            >
+              <option value="">{(!year) ? "Select Year First" : "Select Semester"}</option>
+              {semesters.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
           <div className="space-y-2 md:col-span-2">
             <label className="text-sm font-medium">Subject *</label>
-            <input required name="subject" type="text" placeholder="e.g. CS161 Data Structures" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <select
+              required
+              name="subject"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              disabled={!branch || !year || !semester}
+              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white disabled:opacity-50 disabled:bg-black/5"
+            >
+              <option value="">{(!branch || !year || !semester) ? "Select Branch, Year and Semester first" : "Select Subject"}</option>
+              {subjects.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
           </div>
         </div>
 
@@ -93,7 +190,7 @@ export default function Upload() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Uploader Name (Optional)</label>
-            <input name="uploader_name" type="text" placeholder="Your name or alias" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <input name="uploader_name" type="text" defaultValue={user?.email.split('@')[0]} placeholder="Your name" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
         </div>
 

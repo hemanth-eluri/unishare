@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
-import { BookOpen, Upload, Search, Library } from 'lucide-react';
+import { BookOpen, Upload, Search, Library, LogOut, User as UserIcon, ShieldAlert } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export default function Layout() {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,10 +40,30 @@ export default function Layout() {
               <Library className="w-4 h-4" />
               Browse
             </Link>
-            <Link to="/upload" className="flex items-center gap-1.5 bg-black text-white px-3 py-1.5 rounded-md hover:bg-black/80 transition-colors">
-              <Upload className="w-4 h-4" />
-              Upload
-            </Link>
+            {user ? (
+              <>
+                {user.role === 'admin' && (
+                  <Link to="/reports" className="hidden sm:flex flex-row items-center gap-1.5 text-red-600/80 hover:text-red-600 transition-colors border-r border-black/10 pr-4 font-medium">
+                    <ShieldAlert className="w-4 h-4" /> Reports
+                  </Link>
+                )}
+                <div className="hidden sm:flex items-center gap-1.5 text-black/60 border-r border-black/10 pr-4">
+                  <UserIcon className="w-4 h-4" />
+                  <span className="truncate max-w-[120px]">{user.email.split('@')[0]}</span>
+                </div>
+                <Link to="/upload" className="flex items-center gap-1.5 bg-black text-white px-3 py-1.5 rounded-md hover:bg-black/80 transition-colors">
+                  <Upload className="w-4 h-4" />
+                  Upload
+                </Link>
+                <button onClick={logout} title="Logout" className="text-black/60 hover:text-red-600 transition-colors p-1.5 rounded-md hover:bg-red-50">
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </>
+            ) : (
+              <Link to="/login" className="flex items-center gap-1.5 bg-black text-white px-3 py-1.5 rounded-md hover:bg-black/80 transition-colors">
+                Sign In
+              </Link>
+            )}
           </nav>
         </div>
       </header>

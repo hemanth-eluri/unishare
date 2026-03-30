@@ -11,20 +11,29 @@ import Upload from './pages/Upload';
 import ResourceDetail from './pages/ResourceDetail';
 import Search from './pages/Search';
 import NotFound from './pages/NotFound';
+import Login from './pages/Login';
+import Register from './pages/Register';
+import Reports from './pages/Reports';
+import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="browse" element={<Browse />} />
-          <Route path="upload" element={<Upload />} />
-          <Route path="resource/:id" element={<ResourceDetail />} />
-          <Route path="search" element={<Search />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Home />} />
+            <Route path="browse" element={<Browse />} />
+            <Route path="upload" element={<Upload />} />
+            <Route path="resource/:id" element={<ResourceDetail />} />
+            <Route path="search" element={<Search />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<Register />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="*" element={<NotFound />} />
+          </Route>
+        </Routes>
+      </BrowserRouter>
+    </AuthProvider>
   );
 }
