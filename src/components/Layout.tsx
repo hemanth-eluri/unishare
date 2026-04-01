@@ -43,9 +43,14 @@ export default function Layout() {
             {user ? (
               <>
                 {user.role === 'admin' && (
+                  <>
                   <Link to="/reports" className="hidden sm:flex flex-row items-center gap-1.5 text-red-600/80 hover:text-red-600 transition-colors border-r border-black/10 pr-4 font-medium">
                     <ShieldAlert className="w-4 h-4" /> Reports
                   </Link>
+                  <Link to="/admin/subjects" className="hidden sm:flex flex-row items-center gap-1.5 text-blue-600/80 hover:text-blue-600 transition-colors border-r border-black/10 pr-4 font-medium">
+                    <BookOpen className="w-4 h-4" /> Subjects
+                  </Link>
+                  </>
                 )}
                 <div className="hidden sm:flex items-center gap-1.5 text-black/60 border-r border-black/10 pr-4">
                   <UserIcon className="w-4 h-4" />

@@ -1,9 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { academicData } from '../config/academicData';
 import { useAuth } from '../context/AuthContext';
 
 export default function Upload() {
+  const RESOURCE_TYPES = [
+    "Textbook",
+    "Lecture Notes",
+    "Practice Book",
+    "Previous Question Papers",
+    "Assignments",
+    "Lab Manual",
+    "Reference Material"
+  ];
+
+  const DOCUMENT_TYPES = [
+    "Textbook",
+    "Notes",
+    "Practice",
+    "Previous Papers"
+  ];
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -15,17 +30,20 @@ export default function Upload() {
     }
   }, [user, navigate]);
 
-  // Dropdown states for dependent logic
-  const [university, setUniversity] = useState('');
-  const [branch, setBranch] = useState('');
-  const [year, setYear] = useState('');
   const [semester, setSemester] = useState('');
   const [subject, setSubject] = useState('');
+  const [subjects, setSubjects] = useState<any[]>([]);
 
-  const branches = academicData.getBranches(university);
-  const years = academicData.getYears(university, branch);
-  const semesters = academicData.getSemesters(university, branch, year);
-  const subjects = academicData.getSubjects(university, branch, year, semester);
+  useEffect(() => {
+    if (semester) {
+      fetch(`/api/subjects?semester=${semester}`)
+        .then(res => res.json())
+        .then(data => setSubjects(data));
+    } else {
+      setSubjects([]);
+      setSubject('');
+    }
+  }, [semester]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -77,96 +95,36 @@ export default function Upload() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-sm font-medium">University *</label>
-            <select
-              required
-              name="university"
-              value={university}
-              onChange={(e) => {
-                setUniversity(e.target.value);
-                setBranch('');
-                setYear('');
-                setSemester('');
-                setSubject('');
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white"
-            >
-              <option value="">Select University</option>
-              {academicData.universities.map((u) => (
-                <option key={u} value={u}>{u}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Branch *</label>
-            <select
-              required
-              name="branch"
-              value={branch}
-              onChange={(e) => {
-                setBranch(e.target.value);
-                setSubject('');
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white"
-            >
-              <option value="">{(!university) ? "Select University First" : "Select Branch"}</option>
-              {branches.map((b) => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Year *</label>
-            <select
-              required
-              name="year"
-              disabled={!branch}
-              value={year}
-              onChange={(e) => {
-                setYear(e.target.value);
-                setSemester('');
-                setSubject('');
-              }}
-              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white disabled:opacity-50 disabled:bg-black/5"
-            >
-              <option value="">{(!branch) ? "Select Branch First" : "Select Year"}</option>
-              {years.map((y) => (
-                <option key={y} value={y}>{y}</option>
-              ))}
-            </select>
-          </div>
-          <div className="space-y-2">
             <label className="text-sm font-medium">Semester *</label>
             <select
               required
               name="semester"
-              disabled={!year}
               value={semester}
               onChange={(e) => {
                 setSemester(e.target.value);
                 setSubject('');
               }}
-              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white disabled:opacity-50 disabled:bg-black/5"
+              className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white"
             >
-              <option value="">{(!year) ? "Select Year First" : "Select Semester"}</option>
-              {semesters.map((s) => (
+              <option value="">Select Semester</option>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
             </select>
           </div>
-          <div className="space-y-2 md:col-span-2">
+          <div className="space-y-2">
             <label className="text-sm font-medium">Subject *</label>
             <select
               required
               name="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
-              disabled={!branch || !year || !semester}
+              disabled={!semester}
               className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white disabled:opacity-50 disabled:bg-black/5"
             >
-              <option value="">{(!branch || !year || !semester) ? "Select Branch, Year and Semester first" : "Select Subject"}</option>
+              <option value="">{(!semester) ? "Select Semester first" : "Select Subject"}</option>
               {subjects.map((s) => (
-                <option key={s} value={s}>{s}</option>
+                <option key={s._id} value={s.name}>{s.name}</option>
               ))}
             </select>
           </div>
@@ -175,13 +133,29 @@ export default function Upload() {
         <hr className="border-black/5" />
 
         <div className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Resource Type *</label>
+              <select required name="resource_type" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white">
+                <option value="">Select Resource Type</option>
+                {RESOURCE_TYPES.map(rt => <option key={rt} value={rt}>{rt}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Document Type *</label>
+              <select required name="document_type" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white">
+                <option value="">Select Document Type</option>
+                {DOCUMENT_TYPES.map(dt => <option key={dt} value={dt}>{dt}</option>)}
+              </select>
+            </div>
+          </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Resource Title *</label>
             <input required name="title" type="text" placeholder="e.g. Midterm Review Notes" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Description *</label>
-            <textarea required name="description" rows={3} placeholder="Briefly describe what this resource contains..." className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <textarea required name="description" rows={3} maxLength={300} placeholder="Briefly describe what this resource contains..." className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Document File (PDF/DOC) *</label>

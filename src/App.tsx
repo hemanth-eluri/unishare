@@ -14,6 +14,7 @@ import NotFound from './pages/NotFound';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Reports from './pages/Reports';
+import AdminSubjects from './pages/AdminSubjects';
 import { AuthProvider } from './context/AuthContext';
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
             <Route path="reports" element={<Reports />} />
+            <Route path="admin/subjects" element={<AdminSubjects />} />
             <Route path="*" element={<NotFound />} />
           </Route>
         </Routes>

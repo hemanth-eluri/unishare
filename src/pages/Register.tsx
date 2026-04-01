@@ -12,8 +12,8 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.endsWith('kluniversity.in')) {
-      setError('Please use a kluniversity.in email address.');
+    if (!email.endsWith('@kluniversity.in')) {
+      setError('Please use a @kluniversity.in email address.');
       return;
     }
     setError('');

@@ -63,19 +63,43 @@ if (MONGODB_URI) {
 const resourceSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
-  university: { type: String, required: true },
-  branch: { type: String, required: true },
-  year: { type: String, required: true },
-  semester: { type: String, required: true },
+  semester: { type: Number, required: true },
   subject: { type: String, required: true },
+  resource_type: { type: String, required: true },
+  document_type: { type: String, required: true },
   pdf_link: { type: String, required: true },
   uploader_name: { type: String },
+  helpful_votes: { type: Number, default: 0 },
+  not_helpful_votes: { type: Number, default: 0 },
+  download_count: { type: Number, default: 0 },
+  verified: { type: Boolean, default: false },
+  created_at: { type: Date, default: Date.now }
+});
+
+const videoSchema = new mongoose.Schema({
+  subject: { type: String, required: true },
+  title: { type: String, required: true },
+  video_url: { type: String, required: true },
+  description: { type: String },
   created_at: { type: Date, default: Date.now }
 });
 
 const reportSchema = new mongoose.Schema({
   resource_id: { type: String, required: true },
   reason: { type: String, required: true },
+  created_at: { type: Date, default: Date.now }
+});
+
+const voteSchema = new mongoose.Schema({
+  user_id: { type: String, required: true },
+  resource_id: { type: String, required: true },
+  vote_type: { type: String, enum: ['helpful', 'not_helpful'], required: true },
+  created_at: { type: Date, default: Date.now }
+});
+
+const subjectItemSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  semester: { type: Number, required: true },
   created_at: { type: Date, default: Date.now }
 });
 
@@ -89,6 +113,9 @@ const userSchema = new mongoose.Schema({
 const Resource = mongoose.model('Resource', resourceSchema);
 const Report = mongoose.model('Report', reportSchema);
 const User = mongoose.model('User', userSchema);
+const Video = mongoose.model('Video', videoSchema);
+const Vote = mongoose.model('Vote', voteSchema);
+const SubjectModel = mongoose.model('Subject', subjectItemSchema);
 
 // In-memory fallback data for preview environment
 let fallbackResources: any[] = [
@@ -96,18 +123,28 @@ let fallbackResources: any[] = [
     _id: '1',
     title: 'Data Structures and Algorithms Notes',
     description: 'Comprehensive notes covering trees, graphs, and dynamic programming.',
-    university: 'JNTU',
-    branch: 'CSE',
-    year: '2nd Year',
-    semester: 'Sem 2',
+    semester: 4,
     subject: 'Design and Analysis of Algorithms',
+    resource_type: 'Lecture Notes',
+    document_type: 'Notes',
     pdf_link: 'https://drive.google.com/file/d/1234567890/view',
     uploader_name: 'Alice',
+    download_count: 5,
+    helpful_votes: 10,
+    not_helpful_votes: 2,
     created_at: new Date()
   }
 ];
 let fallbackReports: any[] = [];
 let fallbackUsers: any[] = [];
+let fallbackVideos: any[] = [];
+let fallbackVotes: any[] = [];
+let fallbackSubjects: any[] = [
+  { _id: 'sub_1', name: 'Design and Analysis of Algorithms', semester: 4, created_at: new Date() },
+  { _id: 'sub_2', name: 'Operating Systems', semester: 4, created_at: new Date() },
+  { _id: 'sub_3', name: 'Data Structures', semester: 2, created_at: new Date() },
+  { _id: 'sub_4', name: 'Mathematics-I', semester: 1, created_at: new Date() }
+];
 
 // Create default admin for fallback memory mode
 bcryptjs.hash('KL2508281', 10).then(hashed => {
@@ -147,8 +184,14 @@ app.post('/api/upload-resource', upload.single('document_file'), async (req, res
 app.get('/api/resources', async (req, res) => {
   try {
     const match: any = {};
-    ['university', 'branch', 'year', 'semester', 'subject'].forEach(key => {
-      if (req.query[key]) match[key] = req.query[key];
+    ['semester', 'subject', 'resource_type', 'document_type'].forEach(key => {
+      if (req.query[key]) {
+        if (key === 'semester') {
+          match[key] = parseInt(req.query[key] as string, 10);
+        } else {
+          match[key] = req.query[key];
+        }
+      }
     });
 
     if (isMongoConnected) {
@@ -175,15 +218,17 @@ app.get('/api/search', async (req, res) => {
       const resources = await Resource.find({
         $or: [
           { title: regex },
-          { subject: regex },
-          { university: regex }
+          { subject: regex }
         ]
-      }).sort({ created_at: -1 });
+      }).sort({ verified: -1, created_at: -1 });
       res.json(resources);
     } else {
       const resources = fallbackResources.filter(r =>
-        regex.test(r.title) || regex.test(r.subject) || regex.test(r.university)
-      ).sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+        regex.test(r.title) || regex.test(r.subject)
+      ).sort((a, b) => {
+        if (a.verified !== b.verified) return a.verified ? -1 : 1;
+        return b.created_at.getTime() - a.created_at.getTime();
+      });
       res.json(resources);
     }
   } catch (err: any) {
@@ -207,35 +252,68 @@ app.get('/api/resources/:id', async (req, res) => {
   }
 });
 
-app.get('/api/options', async (req, res) => {
+app.get('/api/subjects', async (req, res) => {
   try {
-    const { university, branch, year, semester } = req.query;
+    const { semester } = req.query;
     const match: any = {};
-    if (university) match.university = university;
-    if (branch) match.branch = branch;
-    if (year) match.year = year;
-    if (semester) match.semester = semester;
-
-    let groupBy = 'university';
-    if (university && !branch) groupBy = 'branch';
-    else if (branch && !year) groupBy = 'year';
-    else if (year && !semester) groupBy = 'semester';
-    else if (semester) groupBy = 'subject';
+    if (semester) match.semester = parseInt(semester as string, 10);
 
     if (isMongoConnected) {
-      const options = await Resource.distinct(groupBy, match);
-      res.json(options.filter(Boolean));
+      const subjects = await SubjectModel.find(match).sort({ name: 1 });
+      res.json(subjects);
     } else {
-      const filtered = fallbackResources.filter(r => {
-        let ok = true;
-        if (university && r.university !== university) ok = false;
-        if (branch && r.branch !== branch) ok = false;
-        if (year && r.year !== year) ok = false;
-        if (semester && r.semester !== semester) ok = false;
-        return ok;
-      });
-      const options = Array.from(new Set(filtered.map(r => r[groupBy]))).filter(Boolean);
-      res.json(options);
+      let subjects = fallbackSubjects;
+      if (semester) {
+        subjects = subjects.filter(s => s.semester === match.semester);
+      }
+      res.json(subjects.sort((a, b) => a.name.localeCompare(b.name)));
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/subjects', async (req, res) => {
+  try {
+    const userId = req.headers.authorization?.split(' ')[1];
+    let user;
+    if (isMongoConnected) user = await User.findById(userId);
+    else user = fallbackUsers.find(u => u._id === userId);
+    
+    if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+
+    const { name, semester } = req.body;
+    if (!name || !semester) return res.status(400).json({ error: 'Name and semester required.' });
+
+    if (isMongoConnected) {
+      const subject = new SubjectModel({ name, semester: parseInt(semester, 10) });
+      await subject.save();
+      res.json(subject);
+    } else {
+      const subject = { _id: Date.now().toString(), name, semester: parseInt(semester, 10), created_at: new Date() };
+      fallbackSubjects.push(subject);
+      res.json(subject);
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/subjects/:id', async (req, res) => {
+  try {
+    const userId = req.headers.authorization?.split(' ')[1];
+    let user;
+    if (isMongoConnected) user = await User.findById(userId);
+    else user = fallbackUsers.find(u => u._id === userId);
+    
+    if (!user || user.role !== 'admin') return res.status(403).json({ error: 'Admin only' });
+
+    if (isMongoConnected) {
+      await SubjectModel.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } else {
+      fallbackSubjects = fallbackSubjects.filter(s => s._id !== req.params.id);
+      res.json({ success: true });
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -263,7 +341,7 @@ app.post('/api/register', async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Missing email or password' });
-    if (!email.endsWith('kluniversity.in')) return res.status(400).json({ error: 'Please use a kluniversity.in email.' });
+    if (!email.endsWith('@kluniversity.in')) return res.status(400).json({ error: 'Please use a @kluniversity.in email.' });
     
     const hashedPassword = await bcryptjs.hash(password, 10);
     if (isMongoConnected) {
@@ -325,6 +403,29 @@ const checkAdmin = async (req: express.Request, res: express.Response, next: exp
   }
 };
 
+const checkUser = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  try {
+    const userId = req.headers.authorization?.split(' ')[1];
+    if (!userId) {
+      res.status(401).json({ error: 'Unauthorized: Missing token' });
+      return;
+    }
+    
+    let user;
+    if (isMongoConnected) user = await User.findById(userId);
+    else user = fallbackUsers.find(u => u._id === userId);
+    
+    if (!user) {
+      res.status(401).json({ error: 'Unauthorized: User not found' });
+      return;
+    }
+    (req as any).user = user;
+    next();
+  } catch (err) {
+    res.status(500).json({ error: 'Server error authorizing user' });
+  }
+};
+
 app.delete('/api/resources/:id', checkAdmin, async (req, res) => {
   try {
     if (isMongoConnected) {
@@ -346,6 +447,138 @@ app.get('/api/reports', checkAdmin, async (req, res) => {
       res.json(reports);
     } else {
       res.json(fallbackReports.concat().sort((a, b) => b.created_at.getTime() - a.created_at.getTime()));
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.get('/api/videos', async (req, res) => {
+  try {
+    const { subject } = req.query;
+    if (!subject) return res.json([]);
+    
+    if (isMongoConnected) {
+      const videos = await Video.find({ subject }).sort({ created_at: -1 });
+      res.json(videos);
+    } else {
+      const videos = fallbackVideos.filter(v => v.subject === subject)
+        .sort((a, b) => b.created_at.getTime() - a.created_at.getTime());
+      res.json(videos);
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/videos', checkAdmin, async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data.video_url || !(data.video_url.includes('youtube.com') || data.video_url.includes('youtu.be'))) {
+      return res.status(400).json({ error: 'Please provide a valid YouTube URL.' });
+    }
+    
+    if (isMongoConnected) {
+      const video = new Video(data);
+      await video.save();
+      res.json(video);
+    } else {
+      const video = { ...data, _id: Date.now().toString(), created_at: new Date() };
+      fallbackVideos.push(video);
+      res.json(video);
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/videos/:id', checkAdmin, async (req, res) => {
+  try {
+    if (isMongoConnected) {
+      await Video.findByIdAndDelete(req.params.id);
+      res.json({ success: true });
+    } else {
+      fallbackVideos = fallbackVideos.filter(v => v._id !== req.params.id);
+      res.json({ success: true });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/documents/:id/:voteType', checkUser, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { voteType } = req.params;
+    if (voteType !== 'helpful' && voteType !== 'not-helpful') {
+      return res.status(400).json({ error: 'Invalid vote type' });
+    }
+    const internalVoteType = voteType === 'not-helpful' ? 'not_helpful' : 'helpful';
+    const userId = (req as any).user._id.toString();
+
+    if (isMongoConnected) {
+      const existingVote = await Vote.findOne({ user_id: userId, resource_id: id });
+      if (existingVote) {
+        return res.status(400).json({ error: 'You have already voted on this document' });
+      }
+      
+      const vote = new Vote({ user_id: userId, resource_id: id, vote_type: internalVoteType });
+      await vote.save();
+      
+      const updateField = internalVoteType === 'helpful' ? 'helpful_votes' : 'not_helpful_votes';
+      const updatedResource = await Resource.findByIdAndUpdate(id, { $inc: { [updateField]: 1 } }, { new: true });
+      
+      res.json(updatedResource);
+    } else {
+      const existingVote = fallbackVotes.find(v => v.user_id === userId && v.resource_id === id);
+      if (existingVote) {
+        return res.status(400).json({ error: 'You have already voted on this document' });
+      }
+      fallbackVotes.push({ user_id: userId, resource_id: id, vote_type: internalVoteType, created_at: new Date() });
+      
+      const resource = fallbackResources.find(r => r._id === id);
+      if (resource) {
+        if (internalVoteType === 'helpful') resource.helpful_votes = (resource.helpful_votes || 0) + 1;
+        else resource.not_helpful_votes = (resource.not_helpful_votes || 0) + 1;
+      }
+      res.json(resource);
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/documents/:id/download', async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (isMongoConnected) {
+      const resource = await Resource.findByIdAndUpdate(id, { $inc: { download_count: 1 } }, { new: true });
+      res.json({ success: true, download_count: resource?.download_count });
+    } else {
+      const resource = fallbackResources.find(r => r._id === id);
+      if (resource) {
+        resource.download_count = (resource.download_count || 0) + 1;
+      }
+      res.json({ success: true, download_count: resource?.download_count });
+    }
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/documents/:id/verify', checkAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { verified } = req.body;
+    if (isMongoConnected) {
+      const resource = await Resource.findByIdAndUpdate(id, { verified }, { new: true });
+      res.json(resource);
+    } else {
+      const resource = fallbackResources.find(r => r._id === id);
+      if (resource) {
+        resource.verified = verified;
+      }
+      res.json(resource);
     }
   } catch (err: any) {
     res.status(500).json({ error: err.message });

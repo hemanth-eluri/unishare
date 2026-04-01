@@ -64,14 +64,31 @@ export default function Search() {
                 </div>
                 <div>
                   <div className="flex flex-wrap items-center gap-2 mb-2 text-xs font-medium text-black/60">
-                    <span className="bg-black/5 px-2 py-1 rounded">{resource.university}</span>
+                    <span className="bg-black/5 px-2 py-1 rounded">Sem {resource.semester}</span>
                     <span>•</span>
                     <span className="bg-black/5 px-2 py-1 rounded">{resource.subject}</span>
+                    <span>•</span>
+                    <span className="bg-blue-50 text-blue-600 px-2 py-1 rounded">{resource.resource_type || 'General'}</span>
+                    {resource.document_type && (
+                      <span className="bg-purple-50 text-purple-600 px-2 py-1 rounded">[{resource.document_type}]</span>
+                    )}
+                    {resource.verified && (
+                      <span className="bg-green-100 text-green-700 px-2 py-1 rounded font-medium flex items-center gap-1">✔ Verified by Admin</span>
+                    )}
                   </div>
                   <h3 className="font-medium text-lg mb-1">{resource.title}</h3>
-                  <p className="text-sm text-black/60 line-clamp-2 mb-3">{resource.description}</p>
+                  <p className="text-sm text-black/60 mb-3">
+                    {resource.description?.length > 120 ? (
+                      <>
+                        {resource.description.substring(0, 120)}...<span className="text-blue-600 hover:underline ml-1">read more</span>
+                      </>
+                    ) : (
+                      resource.description
+                    )}
+                  </p>
                   <div className="flex items-center gap-4 text-xs text-black/40">
                     <span>Uploaded by {resource.uploader_name || 'Anonymous'}</span>
+                    <span className="font-medium text-black/60">⬇ {resource.download_count || 0} downloads</span>
                     <span>{new Date(resource.created_at).toLocaleDateString()}</span>
                   </div>
                 </div>
