@@ -17,7 +17,7 @@ export default function Layout() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f7f5] text-[#37352f] font-sans">
+    <div className="min-h-screen flex flex-col bg-[#f7f7f5] text-[#37352f] font-sans">
       <header className="sticky top-0 z-10 bg-[#f7f7f5]/80 backdrop-blur-md border-b border-black/5">
         <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
           <Link to="/" className="flex items-center gap-2 font-medium hover:opacity-80 transition-opacity shrink-0">
@@ -72,9 +72,28 @@ export default function Layout() {
           </nav>
         </div>
       </header>
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-5xl w-full mx-auto px-4 py-8 flex-grow">
         <Outlet />
       </main>
+      <footer className="mt-auto py-10 border-t border-black/5 bg-gradient-to-b from-transparent to-black/[0.02]">
+        <div className="max-w-5xl mx-auto px-4 flex flex-col items-center gap-3">
+          <p className="text-sm font-medium text-black/70 flex items-center gap-2">
+            Built by <span className="font-bold text-black tracking-wide">ELURI HEMANTH</span>
+          </p>
+          <div className="flex items-center gap-4 sm:gap-6 text-sm text-black/60 flex-wrap justify-center">
+            <a href="mailto:hemanthsocial9@gmail.com" className="hover:text-black transition-all flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-black/5 shadow-sm hover:shadow-md hover:-translate-y-0.5">
+              <span className="text-base">📧</span> hemanthsocial9@gmail.com
+            </a>
+            <a href="https://www.linkedin.com/in/hemanth-eluri/" target="_blank" rel="noopener noreferrer" className="hover:text-[#0a66c2] transition-all flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-black/5 shadow-sm hover:shadow-md hover:-translate-y-0.5">
+              <span className="text-base">🔗</span> LinkedIn
+            </a>
+          </div>
+          <div className="mt-4 px-4 py-1.5 rounded-full bg-black/5 text-xs font-mono tracking-widest text-black/50 uppercase flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+            It is vibe coded
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
