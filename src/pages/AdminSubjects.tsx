@@ -81,10 +81,10 @@ export default function AdminSubjects() {
         
         <form onSubmit={handleAdd} className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1">
-            <input required type="text" placeholder="Subject Name (e.g. Operating Systems)" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <input required type="text" id="subjectName" name="subjectName" placeholder="Subject Name (e.g. Operating Systems)" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
           <div className="w-48">
-            <select required value={semester} onChange={e => setSemester(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5">
+            <select required id="subjectSemester" name="subjectSemester" value={semester} onChange={e => setSemester(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5">
               <option value="">Select Semester</option>
               {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>{s}</option>)}
             </select>

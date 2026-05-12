@@ -243,6 +243,8 @@ export default function ResourceDetail() {
           <form onSubmit={handleReport} className="flex gap-4">
             <input
               type="text"
+              id="reportReason"
+              name="reportReason"
               required
               value={reportReason}
               onChange={e => setReportReason(e.target.value)}

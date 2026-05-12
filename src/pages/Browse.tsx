@@ -167,21 +167,21 @@ export default function Browse() {
       <div className="mb-8 bg-white p-6 rounded-2xl border border-black/5 shadow-sm">
         <h2 className="text-lg font-semibold mb-4 text-black/80">Filter and Sort Resources</h2>
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <select value={semester} onChange={(e) => { 
+          <select id="semester" name="semester" value={semester} onChange={(e) => { 
             setSemester(e.target.value); setSubject(''); 
           }} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm">
             <option value="">All Semesters</option>
             {[1, 2, 3, 4, 5, 6, 7, 8].map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <select value={subject} onChange={(e) => setSubject(e.target.value)} disabled={!semester} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm disabled:opacity-50 disabled:bg-black/5">
+          <select id="subject" name="subject" value={subject} onChange={(e) => setSubject(e.target.value)} disabled={!semester} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm disabled:opacity-50 disabled:bg-black/5">
             <option value="">{!semester ? "Select Semester First" : "All Subjects"}</option>
             {subjects.map(s => <option key={s._id} value={s.name}>{s.name}</option>)}
           </select>
-          <select value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm">
+          <select id="documentType" name="documentType" value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm">
             <option value="">All Document Types</option>
             {DOCUMENT_TYPES.map(dt => <option key={dt} value={dt}>{dt}</option>)}
           </select>
-          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm">
+          <select id="sortBy" name="sortBy" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white text-sm">
             <option value="helpful">Sort By: Most Helpful</option>
             <option value="downloaded">Sort By: Most Downloaded</option>
             <option value="newest">Sort By: Newest Upload</option>
@@ -253,13 +253,13 @@ export default function Browse() {
                 <form onSubmit={handleAddVideo} className="bg-white p-6 rounded-xl border border-black/5 shadow-sm mb-6 space-y-4">
                   <h3 className="font-medium text-lg mb-2">Add New Recommended Video</h3>
                   <div className="space-y-2">
-                    <input required type="text" placeholder="Video Title" value={videoForm.title} onChange={e => setVideoForm({...videoForm, title: e.target.value})} className="w-full px-3 py-2 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" />
+                    <input required type="text" id="videoTitle" name="videoTitle" placeholder="Video Title" value={videoForm.title} onChange={e => setVideoForm({...videoForm, title: e.target.value})} className="w-full px-3 py-2 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" />
                   </div>
                   <div className="space-y-2">
-                    <input required type="url" placeholder="YouTube URL" value={videoForm.video_url} onChange={e => setVideoForm({...videoForm, video_url: e.target.value})} className="w-full px-3 py-2 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" />
+                    <input required type="url" id="videoUrl" name="videoUrl" placeholder="YouTube URL" value={videoForm.video_url} onChange={e => setVideoForm({...videoForm, video_url: e.target.value})} className="w-full px-3 py-2 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" />
                   </div>
                   <div className="space-y-2">
-                    <input type="text" placeholder="Short description (optional)" value={videoForm.description} onChange={e => setVideoForm({...videoForm, description: e.target.value})} className="w-full px-3 py-2 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" />
+                    <input type="text" id="videoDescription" name="videoDescription" placeholder="Short description (optional)" value={videoForm.description} onChange={e => setVideoForm({...videoForm, description: e.target.value})} className="w-full px-3 py-2 border border-black/10 rounded-lg focus:outline-none focus:ring-2 focus:ring-black/5" />
                   </div>
                   <button type="submit" className="bg-black text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-black/80">Submit Video</button>
                 </form>

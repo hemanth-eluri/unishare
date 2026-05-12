@@ -99,6 +99,7 @@ export default function Upload() {
             <select
               required
               name="semester"
+              id="semester"
               value={semester}
               onChange={(e) => {
                 setSemester(e.target.value);
@@ -117,6 +118,7 @@ export default function Upload() {
             <select
               required
               name="subject"
+              id="subject"
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               disabled={!semester}
@@ -136,14 +138,14 @@ export default function Upload() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium">Resource Type *</label>
-              <select required name="resource_type" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white">
+              <select required name="resource_type" id="resource_type" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white">
                 <option value="">Select Resource Type</option>
                 {RESOURCE_TYPES.map(rt => <option key={rt} value={rt}>{rt}</option>)}
               </select>
             </div>
             <div className="space-y-2">
               <label className="text-sm font-medium">Document Type *</label>
-              <select required name="document_type" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white">
+              <select required name="document_type" id="document_type" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5 bg-white">
                 <option value="">Select Document Type</option>
                 {DOCUMENT_TYPES.map(dt => <option key={dt} value={dt}>{dt}</option>)}
               </select>
@@ -151,20 +153,20 @@ export default function Upload() {
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Resource Title *</label>
-            <input required name="title" type="text" placeholder="e.g. Midterm Review Notes" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <input required name="title" id="title" type="text" placeholder="e.g. Midterm Review Notes" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Description *</label>
-            <textarea required name="description" rows={3} maxLength={300} placeholder="Briefly describe what this resource contains..." className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <textarea required name="description" id="description" rows={3} maxLength={300} placeholder="Briefly describe what this resource contains..." className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Document File (PDF/DOC) *</label>
-            <input required name="document_file" type="file" accept=".pdf,.doc,.docx" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <input required name="document_file" id="document_file" type="file" accept=".pdf,.doc,.docx" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
             <p className="text-xs text-black/40">Upload your PDF or Word document here.</p>
           </div>
           <div className="space-y-2">
             <label className="text-sm font-medium">Uploader Name (Optional)</label>
-            <input name="uploader_name" type="text" defaultValue={user?.email.split('@')[0]} placeholder="Your name" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
+            <input name="uploader_name" id="uploader_name" type="text" defaultValue={user?.email.split('@')[0]} placeholder="Your name" className="w-full px-3 py-2 rounded-lg border border-black/10 focus:outline-none focus:ring-2 focus:ring-black/5" />
           </div>
         </div>
 

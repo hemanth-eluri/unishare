@@ -51,6 +51,8 @@ export default function Register() {
             <input 
               required 
               type="email" 
+              id="email"
+              name="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="e.g. user@kluniversity.in" 
@@ -62,6 +64,8 @@ export default function Register() {
             <input 
               required 
               type="password" 
+              id="password"
+              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••" 

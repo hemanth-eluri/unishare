@@ -28,6 +28,8 @@ export default function Layout() {
           <form onSubmit={handleSearch} className="flex-1 max-w-md relative">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-black/40" />
             <input 
+              id="searchQuery"
+              name="searchQuery"
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Search title, subject, university..." 
